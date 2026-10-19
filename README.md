@@ -13,7 +13,7 @@ MCP server for Ex Libris Primo library discovery -- search university catalogues
 ## Installation
 
 ```bash
-git clone https://github.com/geheharidas/primo-mcp-server.git
+git clone https://github.com/jhennig/primo-mcp-server.git
 cd primo-mcp-server
 pip install -e .
 ```
@@ -67,7 +67,51 @@ Defaults are set for UWA (University of Western Australia). Override via environ
 | `PRIMO_MAX_RESULTS_PER_REQUEST` | `50` | Maximum results per search |
 | `PRIMO_DEFAULT_RESULTS` | `10` | Default results per search |
 
-See `.env.example` for the full list.
+| `PRIMO_TAB_EVERYTHING` | `Everything` | Primo tab for local catalogue plus subscribed databases |
+| `PRIMO_TAB_CATALOGUE` | `Catalogue` | Primo tab for the local catalogue only |
+| `PRIMO_SCOPE_COMBINED` | `MyInst_and_CI` | Search scope used with the "everything" tab |
+| `PRIMO_SCOPE_LOCAL` | `MyInstitution` | Search scope used with the "catalogue" tab |
+
+See `.env.example` for the full list. Values can also go in a `.env` file in the directory the server is started from.
+
+### Finding the values for your institution
+
+Run any search in your library's Primo interface and look at the address bar. A Primo VE search URL looks like this:
+
+```
+https://<host>/discovery/search?query=any,contains,test&tab=<TAB>&search_scope=<SCOPE>&vid=<VID>
+```
+
+- `PRIMO_BASE_URL` is `https://<host>/primaws/rest/pub`
+- `PRIMO_VID` is the `vid` value (for example `01ABC_INST:MAIN`)
+- `PRIMO_TAB_EVERYTHING` and `PRIMO_SCOPE_COMBINED` are the `tab` and `search_scope` values when searching everything
+- `PRIMO_TAB_CATALOGUE` and `PRIMO_SCOPE_LOCAL` are the same values after switching the interface to the local catalogue only
+
+### University of Alberta
+
+Set the values in the `env` block of the server registration, so that nothing in the repository needs to change:
+
+```json
+{
+  "mcpServers": {
+    "primo": {
+      "command": "python",
+      "args": ["-m", "primo_mcp_server"],
+      "env": {
+        "PRIMO_BASE_URL": "https://<ualberta-primo-host>/primaws/rest/pub",
+        "PRIMO_VID": "<ualberta-vid>",
+        "PRIMO_INSTITUTION_NAME": "University of Alberta",
+        "PRIMO_TAB_EVERYTHING": "<everything-tab>",
+        "PRIMO_TAB_CATALOGUE": "<catalogue-tab>",
+        "PRIMO_SCOPE_COMBINED": "<everything-scope>",
+        "PRIMO_SCOPE_LOCAL": "<catalogue-scope>"
+      }
+    }
+  }
+}
+```
+
+Fill in the placeholders using the steps above. The server uses the public Primo API (`primaws/rest/pub`), so no API key is needed, but results from subscribed databases depend on the view allowing guest access.
 
 ## Running Tests
 
@@ -76,6 +120,10 @@ pip install -e ".[dev]"
 pytest tests/ -v
 ```
 
+## Credits
+
+Originally written by Gehe Haridas ([geheharidas/primo-mcp-server](https://github.com/geheharidas/primo-mcp-server)). This fork adds University of Alberta setup.
+
 ## Licence
 
-MIT
+MIT. See `LICENSE`.
