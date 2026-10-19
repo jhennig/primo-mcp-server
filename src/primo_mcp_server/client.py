@@ -150,9 +150,14 @@ class PrimoClient:
     async def get_record(self, record_id: str) -> PrimoRecord | None:
         """Fetch a single record by its Primo record ID.
 
-        Searches by the record ID and returns the first matching result.
-        Returns None if not found.
+        Searches by the record ID and returns only a result whose record ID
+        matches exactly. Returns None if no exact match is found, so callers
+        never receive (and cite or export) a different item by mistake.
         """
+        record_id = record_id.strip()
+        if not record_id:
+            return None
+
         cfg = self._config
         params: dict[str, Any] = {
             "vid": cfg.vid,
@@ -166,13 +171,10 @@ class PrimoClient:
         data = await self._get("/pnxs", params=params)
         response = SearchResponse.from_api_response(data)
 
-        # Find exact match by record_id
         for record in response.records:
             if record.record_id == record_id:
                 return record
-
-        # If no exact match, return the first result (may be a partial match)
-        return response.records[0] if response.records else None
+        return None
 
     async def suggest(self, query: str) -> list[str]:
         """Get autocomplete suggestions for a search term."""
@@ -189,14 +191,23 @@ class PrimoClient:
         docs = response.get("docs", [])
         return [doc.get("text", "") for doc in docs if doc.get("text")]
 
-    async def get_records(self, record_ids: list[str]) -> list[PrimoRecord]:
-        """Fetch multiple records by their IDs."""
-        records = []
+    async def get_records(
+        self, record_ids: list[str]
+    ) -> tuple[list[PrimoRecord], list[str]]:
+        """Fetch multiple records by their IDs.
+
+        Returns:
+            A tuple of (records found, IDs that had no exact match).
+        """
+        records: list[PrimoRecord] = []
+        missing: list[str] = []
         for rid in record_ids:
             record = await self.get_record(rid)
-            if record:
+            if record is None:
+                missing.append(rid)
+            else:
                 records.append(record)
-        return records
+        return records, missing
 
     async def _get(self, path: str, params: dict[str, Any]) -> dict:
         """Make a GET request to the Primo API."""
