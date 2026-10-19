@@ -12,28 +12,53 @@ MCP server for Ex Libris Primo library discovery -- search university catalogues
 
 ## Installation
 
+Requires Python 3.11 or later. Install into a virtual environment so the server has its own dependencies:
+
 ```bash
 git clone https://github.com/jhennig/primo-mcp-server.git
 cd primo-mcp-server
-pip install -e .
+python3 -m venv .venv
+.venv/bin/pip install -e .
 ```
 
-## Register in Claude Code
+On Windows, use `.venv\Scripts\pip install -e .` instead.
 
-Add to `~/.claude/settings.json`:
+Then note the full path to the virtual environment's Python, which the registration steps below need:
+
+```bash
+echo "$PWD/.venv/bin/python"
+```
+
+On Windows the path is `<repo folder>\.venv\Scripts\python.exe`.
+
+Use this full path rather than a bare `python` command. Claude Desktop and Claude Code start the server without your shell's `PATH` or an activated virtual environment, so a bare `python` usually resolves to a different interpreter that does not have the server installed.
+
+## Register in Claude Desktop
+
+Open Claude Desktop, go to Settings > Developer > Edit Config, and add the server to `claude_desktop_config.json`:
 
 ```json
 {
   "mcpServers": {
     "primo": {
-      "command": "python",
+      "command": "/full/path/to/primo-mcp-server/.venv/bin/python",
       "args": ["-m", "primo_mcp_server"]
     }
   }
 }
 ```
 
-Restart Claude Code. The tools will appear as `mcp__primo__primo_search`, etc.
+Fully quit and reopen Claude Desktop. The Primo tools then appear in the tools menu of a new chat.
+
+## Register in Claude Code
+
+Run:
+
+```bash
+claude mcp add primo -- /full/path/to/primo-mcp-server/.venv/bin/python -m primo_mcp_server
+```
+
+Add `--scope user` to make the server available in every project rather than only the current directory. Check it with `claude mcp list`. The tools appear as `mcp__primo__primo_search`, etc.
 
 ## Tools
 
@@ -47,7 +72,7 @@ Restart Claude Code. The tools will appear as `mcp__primo__primo_search`, etc.
 
 ## Usage Examples
 
-From a Claude Code conversation:
+From a Claude Desktop or Claude Code conversation:
 
 - "Search the library for articles about machine learning in entrepreneurship published after 2020"
 - "Get the full details for record cdi_crossref_primary_10_1234"
@@ -92,13 +117,13 @@ The defaults point at the University of Alberta Library Search (`https://search.
 
 ### Other institutions
 
-Set the values in the `env` block of the server registration:
+Set the values in the `env` block of the Claude Desktop registration (with Claude Code, pass each one as `--env NAME=value` to `claude mcp add`):
 
 ```json
 {
   "mcpServers": {
     "primo": {
-      "command": "python",
+      "command": "/full/path/to/primo-mcp-server/.venv/bin/python",
       "args": ["-m", "primo_mcp_server"],
       "env": {
         "PRIMO_BASE_URL": "https://<primo-host>/primaws/rest/pub",
