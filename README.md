@@ -60,6 +60,28 @@ claude mcp add primo -- /full/path/to/primo-mcp-server/.venv/bin/python -m primo
 
 Add `--scope user` to make the server available in every project rather than only the current directory. Check it with `claude mcp list`. The tools appear as `mcp__primo__primo_search`, etc.
 
+## Hosting one shared copy
+
+Instead of each person installing the server, an institution can run one copy on a web server and let people add it to Claude as a connector, with nothing to install on their own computer.
+
+Start the server in HTTP mode:
+
+```bash
+primo-mcp-server --transport streamable-http --host 0.0.0.0 --port 8000
+```
+
+The tools are then served at `http://<server>:8000/mcp`. The same settings are available as environment variables (`PRIMO_TRANSPORT`, `PRIMO_HTTP_HOST`, `PRIMO_HTTP_PORT`), which is easier in a service file or container.
+
+For a public deployment:
+
+- Put the server behind a reverse proxy (for example nginx) that provides HTTPS, so the address people add is `https://<public hostname>/mcp`.
+- If the server binds to `127.0.0.1` behind that proxy, set `PRIMO_HTTP_ALLOWED_HOSTS` to the public hostname (comma-separated for several). The server rejects requests whose `Host` header is not on that list, which protects it from DNS rebinding.
+- Consider rate limiting at the proxy. Every search runs against your Primo instance on behalf of whoever uses the connector.
+
+The server runs statelessly and answers with plain JSON, so several copies can run behind a load balancer. It has no login of its own: anyone who can reach the address can search, with the same guest access as the public Library Search page.
+
+To use a hosted copy, add the `https://.../mcp` address in Claude under Settings > Connectors > Add custom connector.
+
 ## Tools
 
 | Tool | Description |

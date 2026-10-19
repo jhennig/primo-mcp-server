@@ -1,5 +1,7 @@
 """Configuration for the Primo MCP server."""
 
+from typing import Literal
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -29,3 +31,14 @@ class PrimoConfig(BaseSettings):
     default_results: int = 10
     language: str = "en"
     user_agent: str = "primo-mcp-server/0.1.0"
+
+    # How MCP clients connect. "stdio" (default) is for a client that starts
+    # the server itself, such as Claude Desktop. "streamable-http" serves the
+    # tools over the web so one hosted copy can be shared as a connector.
+    transport: Literal["stdio", "streamable-http"] = "stdio"
+    http_host: str = "127.0.0.1"
+    http_port: int = 8000
+    # Comma-separated public hostnames the HTTP server answers to, for example
+    # "mcp.library.example.edu". Needed when binding to localhost behind a
+    # reverse proxy that passes the public Host header.
+    http_allowed_hosts: str = ""
