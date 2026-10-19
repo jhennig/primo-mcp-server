@@ -7,6 +7,7 @@ from typing import AsyncIterator
 
 import httpx
 from mcp.server.fastmcp import Context, FastMCP
+from mcp.server.transport_security import TransportSecuritySettings
 
 from primo_mcp_server.client import PrimoAPIError, PrimoClient
 from primo_mcp_server.config import PrimoConfig
@@ -42,6 +43,44 @@ mcp = FastMCP(
     ),
     lifespan=app_lifespan,
 )
+
+
+LOOPBACK_HOSTS = ("127.0.0.1", "localhost", "::1")
+LOOPBACK_ALLOWED_HOSTS = ["127.0.0.1:*", "localhost:*", "[::1]:*"]
+LOOPBACK_ALLOWED_ORIGINS = ["http://127.0.0.1:*", "http://localhost:*", "http://[::1]:*"]
+
+
+def configure_http(server: FastMCP, host: str, port: int, allowed_hosts: str = "") -> None:
+    """Prepare the server to serve its tools over streamable HTTP.
+
+    The server is stateless (every request stands alone) and answers with
+    plain JSON, so it can run behind a reverse proxy or as several copies.
+
+    Host header checking (DNS rebinding protection) is turned on when the
+    server binds to localhost or when public hostnames are listed in
+    allowed_hosts. It is turned off when binding to another interface with
+    no hostnames listed, so the server answers to whatever name points at it.
+    """
+    server.settings.host = host
+    server.settings.port = port
+    server.settings.stateless_http = True
+    server.settings.json_response = True
+
+    names = [h.strip() for h in allowed_hosts.split(",") if h.strip()]
+    if names:
+        server.settings.transport_security = TransportSecuritySettings(
+            enable_dns_rebinding_protection=True,
+            allowed_hosts=[*names, *(f"{n}:*" for n in names), *LOOPBACK_ALLOWED_HOSTS],
+            allowed_origins=[*(f"https://{n}" for n in names), *LOOPBACK_ALLOWED_ORIGINS],
+        )
+    elif host in LOOPBACK_HOSTS:
+        server.settings.transport_security = TransportSecuritySettings(
+            enable_dns_rebinding_protection=True,
+            allowed_hosts=list(LOOPBACK_ALLOWED_HOSTS),
+            allowed_origins=list(LOOPBACK_ALLOWED_ORIGINS),
+        )
+    else:
+        server.settings.transport_security = None
 
 
 def _get_client(ctx: Context) -> PrimoClient:
