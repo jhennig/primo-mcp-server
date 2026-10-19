@@ -40,7 +40,7 @@ async def test_primo_search_passes_date_to_alone(ctx, empty_results_data):
     await server.primo_search(ctx, "x", date_to="1999")
 
     params = route.calls.last.request.url.params
-    assert params["multiFacets"] == "facet_searchcreationdate,include,0|,|1999"
+    assert params["q"] == "any,contains,x,AND;dr_s,exact,100001,AND;dr_e,exact,199912"
 
 
 @respx.mock

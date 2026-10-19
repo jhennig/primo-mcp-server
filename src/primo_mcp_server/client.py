@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import date
 from typing import Any
 
 import httpx
@@ -19,8 +20,12 @@ class PrimoAPIError(Exception):
 
 
 # Open-ended bounds used when only one end of a year range is given.
-_MIN_YEAR = 0
-_MAX_YEAR = 9999
+# The upper bound allows for forthcoming items dated next year.
+_MIN_YEAR = 1000
+
+
+def _max_year() -> int:
+    return date.today().year + 1
 
 
 def _parse_year(value: str | None, name: str) -> int | None:
@@ -42,8 +47,9 @@ def _year_range(date_from: str | None, date_to: str | None) -> tuple[int, int] |
     end = _parse_year(date_to, "date_to")
     if start is None and end is None:
         return None
-    start = _MIN_YEAR if start is None else start
-    end = _MAX_YEAR if end is None else end
+    if start is None:
+        start = _MIN_YEAR if end is None else min(_MIN_YEAR, end)
+    end = _max_year() if end is None else end
     if start > end:
         raise ValueError(
             f"date_from ({start}) must not be later than date_to ({end})."
@@ -127,14 +133,16 @@ class PrimoClient:
         if q_include:
             params["qInclude"] = "|,|".join(q_include)
 
-        # Publication year range. Primo takes a range as one multiFacets
-        # value (the same form the Primo VE date slider sends), so either
-        # end may be given on its own.
+        # Publication year range. Primo takes a date range as dr_s / dr_e
+        # clauses in an advanced query, as YYYYMM values (the same form the
+        # Primo VE advanced search sends), so either end may be given alone.
         year_range = _year_range(date_from, date_to)
         if year_range:
-            params["multiFacets"] = (
-                f"facet_searchcreationdate,include,{year_range[0]}|,|{year_range[1]}"
+            start, end = year_range
+            params["q"] += (
+                f",AND;dr_s,exact,{start:04d}01,AND;dr_e,exact,{end:04d}12"
             )
+            params["mode"] = "advanced"
 
         data = await self._get("/pnxs", params=params)
         return SearchResponse.from_api_response(data)

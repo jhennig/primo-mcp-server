@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from datetime import date
+
 import httpx
 import pytest
 import respx
@@ -38,7 +40,7 @@ async def test_search_sends_core_params(client, search_results_data):
     assert params["limit"] == "10"
     assert params["offset"] == "0"
     assert "qInclude" not in params
-    assert "multiFacets" not in params
+    assert "mode" not in params
     assert len(response.records) == 3
 
 
@@ -48,7 +50,7 @@ async def test_search_catalogue_scope(client, search_results_data):
 
     await client.search("x", scope="catalogue")
 
-    assert _params(route)["tab"] == "Catalogue"
+    assert _params(route)["tab"] == "LibraryCatalog"
     assert _params(route)["scope"] == "MyInstitution"
 
 
@@ -84,28 +86,42 @@ async def test_search_facets_joined_in_qinclude(client, empty_results_data):
 # ---------------------------------------------------------------------------
 
 
+NEXT_YEAR = date.today().year + 1
+
+
 @respx.mock
 @pytest.mark.parametrize(
     ("date_from", "date_to", "expected"),
     [
-        ("2015", "2020", "facet_searchcreationdate,include,2015|,|2020"),
-        ("2015", None, "facet_searchcreationdate,include,2015|,|9999"),
-        (None, "2020", "facet_searchcreationdate,include,0|,|2020"),
-        ("2020", "2020", "facet_searchcreationdate,include,2020|,|2020"),
-        (" 2015 ", "", "facet_searchcreationdate,include,2015|,|9999"),
+        ("2015", "2020", "dr_s,exact,201501,AND;dr_e,exact,202012"),
+        ("2015", None, f"dr_s,exact,201501,AND;dr_e,exact,{NEXT_YEAR}12"),
+        (None, "2020", "dr_s,exact,100001,AND;dr_e,exact,202012"),
+        ("2020", "2020", "dr_s,exact,202001,AND;dr_e,exact,202012"),
+        (" 2015 ", "", f"dr_s,exact,201501,AND;dr_e,exact,{NEXT_YEAR}12"),
     ],
 )
-async def test_search_year_range_is_one_facet(
+async def test_search_year_range_is_one_query_clause(
     client, empty_results_data, date_from, date_to, expected
 ):
     route = respx.get(PNXS).respond(json=empty_results_data)
 
-    await client.search("x", date_from=date_from, date_to=date_to)
+    await client.search("water", date_from=date_from, date_to=date_to)
 
     params = _params(route)
-    assert params.get_list("multiFacets") == [expected]
+    assert params["q"] == f"any,contains,water,AND;{expected}"
+    assert params["mode"] == "advanced"
     # Years must no longer be expanded into per-year qInclude facets.
     assert "creationdate" not in params.get("qInclude", "")
+
+
+@respx.mock
+async def test_search_without_years_is_not_advanced(client, empty_results_data):
+    route = respx.get(PNXS).respond(json=empty_results_data)
+
+    await client.search("water")
+
+    assert _params(route)["q"] == "any,contains,water"
+    assert "mode" not in _params(route)
 
 
 @respx.mock
@@ -125,7 +141,7 @@ async def test_search_years_combine_with_other_facets(client, empty_results_data
 
     params = _params(route)
     assert params["qInclude"] == "facet_rtype,exact,articles"
-    assert params["multiFacets"] == "facet_searchcreationdate,include,0|,|2010"
+    assert params["q"].endswith(",AND;dr_e,exact,201012")
 
 
 @pytest.mark.parametrize(
