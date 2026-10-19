@@ -77,8 +77,8 @@ async def primo_search(
         limit: Number of results to return (1-50, default 10).
         offset: Pagination offset (default 0). Use to get the next page of results.
         resource_type: Filter by type -- "books", "articles", "journals", "dissertations", "conference_proceedings".
-        date_from: Start year filter (YYYY format, e.g. "2020").
-        date_to: End year filter (YYYY format, e.g. "2025").
+        date_from: Start year filter, inclusive (YYYY format, e.g. "2020"). May be used without date_to.
+        date_to: End year filter, inclusive (YYYY format, e.g. "2025"). May be used without date_from.
         peer_reviewed: Set to true to show only peer-reviewed items.
 
     Returns:
@@ -99,6 +99,8 @@ async def primo_search(
             peer_reviewed=peer_reviewed,
         )
         return format_search_results(response, query, offset)
+    except ValueError as e:
+        return f"Invalid search parameters: {e}"
     except PrimoAPIError as e:
         return f"Error searching Primo: {e}"
     except Exception as e:
