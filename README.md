@@ -56,18 +56,18 @@ From a Claude Code conversation:
 
 ## Configuration
 
-Defaults are set for UWA (University of Western Australia). Override via environment variables:
+Defaults are set for the University of Alberta. Override via environment variables:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `PRIMO_BASE_URL` | `https://onesearch.library.uwa.edu.au/primaws/rest/pub` | Primo API base URL |
-| `PRIMO_VID` | `61UWA_INST:NDE_UWA` | Primo View ID |
-| `PRIMO_INSTITUTION_NAME` | `UWA` | Display name |
+| `PRIMO_BASE_URL` | `https://search.library.ualberta.ca/primaws/rest/pub` | Primo API base URL |
+| `PRIMO_VID` | `01UOA_INST:UOA` | Primo View ID |
+| `PRIMO_INSTITUTION_NAME` | `University of Alberta` | Display name |
 | `PRIMO_REQUEST_TIMEOUT` | `30.0` | HTTP timeout in seconds |
 | `PRIMO_MAX_RESULTS_PER_REQUEST` | `50` | Maximum results per search |
 | `PRIMO_DEFAULT_RESULTS` | `10` | Default results per search |
 | `PRIMO_TAB_EVERYTHING` | `Everything` | Primo tab for local catalogue plus subscribed databases |
-| `PRIMO_TAB_CATALOGUE` | `Catalogue` | Primo tab for the local catalogue only |
+| `PRIMO_TAB_CATALOGUE` | `LibraryCatalog` | Primo tab for the local catalogue only |
 | `PRIMO_SCOPE_COMBINED` | `MyInst_and_CI` | Search scope used with the "everything" tab |
 | `PRIMO_SCOPE_LOCAL` | `MyInstitution` | Search scope used with the "catalogue" tab |
 
@@ -88,7 +88,11 @@ https://<host>/discovery/search?query=any,contains,test&tab=<TAB>&search_scope=<
 
 ### University of Alberta
 
-Set the values in the `env` block of the server registration, so that nothing in the repository needs to change:
+The defaults point at the University of Alberta Library Search (`https://search.library.ualberta.ca/discovery/search?vid=01UOA_INST:UOA`), so no configuration is needed there. The tab and scope codes are the Primo VE out-of-the-box values (`Everything` / `MyInst_and_CI` and `LibraryCatalog` / `MyInstitution`). If a search fails with HTTP 400, check them against the address bar using the steps above.
+
+### Other institutions
+
+Set the values in the `env` block of the server registration:
 
 ```json
 {
@@ -97,9 +101,9 @@ Set the values in the `env` block of the server registration, so that nothing in
       "command": "python",
       "args": ["-m", "primo_mcp_server"],
       "env": {
-        "PRIMO_BASE_URL": "https://<ualberta-primo-host>/primaws/rest/pub",
-        "PRIMO_VID": "<ualberta-vid>",
-        "PRIMO_INSTITUTION_NAME": "University of Alberta",
+        "PRIMO_BASE_URL": "https://<primo-host>/primaws/rest/pub",
+        "PRIMO_VID": "<vid>",
+        "PRIMO_INSTITUTION_NAME": "<institution name>",
         "PRIMO_TAB_EVERYTHING": "<everything-tab>",
         "PRIMO_TAB_CATALOGUE": "<catalogue-tab>",
         "PRIMO_SCOPE_COMBINED": "<everything-scope>",
@@ -110,7 +114,9 @@ Set the values in the `env` block of the server registration, so that nothing in
 }
 ```
 
-Fill in the placeholders using the steps above. The server uses the public Primo API (`primaws/rest/pub`), so no API key is needed, but results from subscribed databases depend on the view allowing guest access.
+The server uses the public Primo API (`primaws/rest/pub`), so no API key is needed, but results from subscribed databases depend on the view allowing guest access.
+
+For example, the original University of Western Australia values were `PRIMO_BASE_URL=https://onesearch.library.uwa.edu.au/primaws/rest/pub`, `PRIMO_VID=61UWA_INST:NDE_UWA` and `PRIMO_TAB_CATALOGUE=Catalogue`.
 
 ## Running Tests
 

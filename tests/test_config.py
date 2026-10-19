@@ -24,6 +24,15 @@ def institution_env(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("PRIMO_SCOPE_LOCAL", "Local_Scope")
 
 
+def test_defaults_are_ualberta(monkeypatch: pytest.MonkeyPatch) -> None:
+    for name in ("BASE_URL", "VID", "INSTITUTION_NAME"):
+        monkeypatch.delenv(f"PRIMO_{name}", raising=False)
+    cfg = PrimoConfig(_env_file=None)
+    assert cfg.base_url == "https://search.library.ualberta.ca/primaws/rest/pub"
+    assert cfg.vid == "01UOA_INST:UOA"
+    assert cfg.institution_name == "University of Alberta"
+
+
 def test_env_overrides_defaults(institution_env: None) -> None:
     cfg = PrimoConfig(_env_file=None)
     assert cfg.base_url == BASE_URL
