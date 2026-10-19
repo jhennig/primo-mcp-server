@@ -88,7 +88,7 @@ https://<host>/discovery/search?query=any,contains,test&tab=<TAB>&search_scope=<
 
 ### University of Alberta
 
-The defaults point at the University of Alberta Library Search (`https://search.library.ualberta.ca/discovery/search?vid=01UOA_INST:UOA`), so no configuration is needed there. The tab and scope codes are the Primo VE out-of-the-box values (`Everything` / `MyInst_and_CI` and `LibraryCatalog` / `MyInstitution`). If a search fails with HTTP 400, check them against the address bar using the steps above.
+The defaults point at the University of Alberta Library Search (`https://search.library.ualberta.ca/discovery/search?vid=01UOA_INST:UOA`), so no configuration is needed there. The tab and scope codes (`Everything` / `MyInst_and_CI` for everything, `LibraryCatalog` / `MyInstitution` for the catalogue) match the UAlberta search URLs as of October 2026. If a search fails with HTTP 400, check them against the address bar using the steps above.
 
 ### Other institutions
 

@@ -7,8 +7,7 @@ class PrimoConfig(BaseSettings):
     """Primo API configuration.
 
     Defaults are set for the University of Alberta (Primo VE view 01UOA_INST:UOA).
-    The tab and scope codes are the Primo VE out-of-the-box values and may need
-    adjusting if the library has customised them.
+    Tab and scope codes match the UAlberta search URLs as of October 2026.
     Override via environment variables with the PRIMO_ prefix,
     or via a .env file in the working directory.
     """
