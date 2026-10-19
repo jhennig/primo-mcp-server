@@ -18,6 +18,39 @@ class PrimoAPIError(Exception):
         super().__init__(message)
 
 
+# Open-ended bounds used when only one end of a year range is given.
+_MIN_YEAR = 0
+_MAX_YEAR = 9999
+
+
+def _parse_year(value: str | None, name: str) -> int | None:
+    """Parse a YYYY year string, treating blank values as absent."""
+    if value is None or not str(value).strip():
+        return None
+    text = str(value).strip()
+    if not text.isdigit() or len(text) > 4:
+        raise ValueError(f'{name} must be a year in YYYY format, got "{value}".')
+    return int(text)
+
+
+def _year_range(date_from: str | None, date_to: str | None) -> tuple[int, int] | None:
+    """Resolve optional start and end years into an inclusive range.
+
+    Returns None when neither end is given. A missing end is left open.
+    """
+    start = _parse_year(date_from, "date_from")
+    end = _parse_year(date_to, "date_to")
+    if start is None and end is None:
+        return None
+    start = _MIN_YEAR if start is None else start
+    end = _MAX_YEAR if end is None else end
+    if start > end:
+        raise ValueError(
+            f"date_from ({start}) must not be later than date_to ({end})."
+        )
+    return start, end
+
+
 class PrimoClient:
     """Async client for the Ex Libris Primo public API."""
 
@@ -54,6 +87,10 @@ class PrimoClient:
 
         Returns:
             SearchResponse with parsed records and pagination info.
+
+        Raises:
+            ValueError: If a year is not YYYY or the range is reversed.
+            PrimoAPIError: If the API request fails.
         """
         cfg = self._config
         limit = min(max(1, limit), cfg.max_results_per_request)
@@ -83,19 +120,21 @@ class PrimoClient:
         q_include: list[str] = []
         if resource_type:
             q_include.append(f"facet_rtype,exact,{resource_type}")
-        if date_from and date_to:
-            # Primo uses individual year facets; for range we add each year
-            # Actually, Primo supports date range via creationdate facet
-            for year in range(int(date_from), int(date_to) + 1):
-                q_include.append(f"facet_creationdate,exact,{year}")
-        elif date_from:
-            q_include.append(f"facet_creationdate,exact,{date_from}")
         if peer_reviewed:
             q_include.append("facet_tlevel,exact,peer_reviewed")
 
         # Add all qInclude params
         if q_include:
             params["qInclude"] = "|,|".join(q_include)
+
+        # Publication year range. Primo takes a range as one multiFacets
+        # value (the same form the Primo VE date slider sends), so either
+        # end may be given on its own.
+        year_range = _year_range(date_from, date_to)
+        if year_range:
+            params["multiFacets"] = (
+                f"facet_searchcreationdate,include,{year_range[0]}|,|{year_range[1]}"
+            )
 
         data = await self._get("/pnxs", params=params)
         return SearchResponse.from_api_response(data)
