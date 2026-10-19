@@ -165,6 +165,18 @@ async def primo_suggest(ctx: Context, query: str) -> str:
         return f"Unexpected error: {e}"
 
 
+def _not_found_message(missing: list[str]) -> str:
+    """Explain which record IDs had no exact match in Primo."""
+    ids = ", ".join(f'"{rid}"' for rid in missing)
+    noun = "Record" if len(missing) == 1 else "Records"
+    return (
+        f"{noun} not found: {ids}. "
+        "No output was generated, to avoid citing or exporting the wrong item. "
+        "Check the IDs with primo_search, then try again with the correct IDs "
+        "(or without the missing ones)."
+    )
+
+
 # ---------------------------------------------------------------------------
 # Tool 4: primo_cite
 # ---------------------------------------------------------------------------
@@ -192,10 +204,12 @@ async def primo_cite(
             return f'Invalid citation style "{style}". Use one of: {", ".join(sorted(valid_styles))}'
 
         client = _get_client(ctx)
-        records = await client.get_records(record_ids)
+        records, missing = await client.get_records(record_ids)
 
+        if missing:
+            return _not_found_message(missing)
         if not records:
-            return "No records found for the provided IDs."
+            return "No record IDs were provided."
 
         citations = []
         for record in records:
@@ -237,10 +251,12 @@ async def primo_export(
             return f'Invalid format "{format}". Use one of: {", ".join(sorted(valid_formats))}'
 
         client = _get_client(ctx)
-        records = await client.get_records(record_ids)
+        records, missing = await client.get_records(record_ids)
 
+        if missing:
+            return _not_found_message(missing)
         if not records:
-            return "No records found for the provided IDs."
+            return "No record IDs were provided."
 
         if format == "bibtex":
             return export_bibtex(records)
