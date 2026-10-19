@@ -66,7 +66,6 @@ Defaults are set for UWA (University of Western Australia). Override via environ
 | `PRIMO_REQUEST_TIMEOUT` | `30.0` | HTTP timeout in seconds |
 | `PRIMO_MAX_RESULTS_PER_REQUEST` | `50` | Maximum results per search |
 | `PRIMO_DEFAULT_RESULTS` | `10` | Default results per search |
-
 | `PRIMO_TAB_EVERYTHING` | `Everything` | Primo tab for local catalogue plus subscribed databases |
 | `PRIMO_TAB_CATALOGUE` | `Catalogue` | Primo tab for the local catalogue only |
 | `PRIMO_SCOPE_COMBINED` | `MyInst_and_CI` | Search scope used with the "everything" tab |
