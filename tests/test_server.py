@@ -111,7 +111,7 @@ async def test_primo_cite_no_records(ctx, empty_results_data):
 
     out = await server.primo_cite(ctx, ["missing"])
 
-    assert out == "No records found for the provided IDs."
+    assert out.startswith('Record not found: "missing".')
 
 
 @respx.mock

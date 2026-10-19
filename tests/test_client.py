@@ -189,11 +189,11 @@ async def test_get_record_none_when_no_results(client, empty_results_data):
 
 
 @respx.mock
-async def test_get_records_skips_missing(client, search_results_data, empty_results_data):
+async def test_get_records_reports_missing(client, search_results_data, empty_results_data):
     respx.get(PNXS, params={"q": "any,contains,missing"}).respond(json=empty_results_data)
     respx.get(PNXS).respond(json=search_results_data)
 
-    records = await client.get_records(
+    records, missing = await client.get_records(
         ["cdi_jstor_primary_43553080", "missing", "cdi_gale_incontextgauss__A649289798"]
     )
 
@@ -201,6 +201,7 @@ async def test_get_records_skips_missing(client, search_results_data, empty_resu
         "cdi_jstor_primary_43553080",
         "cdi_gale_incontextgauss__A649289798",
     ]
+    assert missing == ["missing"]
 
 
 @respx.mock
